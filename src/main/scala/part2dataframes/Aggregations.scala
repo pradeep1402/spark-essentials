@@ -5,7 +5,8 @@ import org.apache.spark.sql.functions._
 
 object Aggregations extends App {
 
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName("Aggregations and Grouping")
     .config("spark.master", "local")
     .getOrCreate()
@@ -14,9 +15,9 @@ object Aggregations extends App {
     .option("inferSchema", "true")
     .json("src/main/resources/data/movies.json")
 
-
   // counting
-  val genresCountDF = moviesDF.select(count(col("Major_Genre"))) // all the values except null
+  val genresCountDF =
+    moviesDF.select(count(col("Major_Genre"))) // all the values except null
   moviesDF.selectExpr("count(Major_Genre)")
 
   // counting all
@@ -50,7 +51,7 @@ object Aggregations extends App {
 
   val countByGenreDF = moviesDF
     .groupBy(col("Major_Genre")) // includes null
-    .count()  // select count(*) from moviesDF group by Major_Genre
+    .count() // select count(*) from moviesDF group by Major_Genre
 
   val avgRatingByGenreDF = moviesDF
     .groupBy(col("Major_Genre"))
@@ -64,9 +65,7 @@ object Aggregations extends App {
     )
     .orderBy(col("Avg_Rating"))
 
-
-  /**
-    * Exercises
+  /** Exercises
     *
     * 1. Sum up ALL the profits of ALL the movies in the DF
     * 2. Count how many distinct directors we have
@@ -74,10 +73,12 @@ object Aggregations extends App {
     * 4. Compute the average IMDB rating and the average US gross revenue PER DIRECTOR
     */
 
-
   // 1
   moviesDF
-    .select((col("US_Gross") + col("Worldwide_Gross") + col("US_DVD_Sales")).as("Total_Gross"))
+    .select(
+      (col("US_Gross") + col("Worldwide_Gross") + col("US_DVD_Sales"))
+        .as("Total_Gross")
+    )
     .select(sum("Total_Gross"))
     .show()
 
@@ -87,10 +88,12 @@ object Aggregations extends App {
     .show()
 
   // 3
-  moviesDF.select(
-    mean("US_Gross"),
-    stddev("US_Gross")
-  ).show()
+  moviesDF
+    .select(
+      mean("US_Gross"),
+      stddev("US_Gross")
+    )
+    .show()
 
   // 4
   moviesDF

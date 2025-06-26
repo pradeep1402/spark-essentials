@@ -5,7 +5,8 @@ import org.apache.spark.sql.functions.{expr, max, col}
 
 object Joins extends App {
 
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName("Joins")
     .config("spark.master", "local")
     .getOrCreate()
@@ -42,7 +43,6 @@ object Joins extends App {
   // anti-joins = everything in the left DF for which there is NO row in the right DF satisfying the condition
   guitaristsDF.join(bandsDF, joinCondition, "left_anti")
 
-
   // things to bear in mind
   // guitaristsBandsDF.select("id", "band").show // this crashes
 
@@ -54,13 +54,18 @@ object Joins extends App {
 
   // option 3 - rename the offending column and keep the data
   val bandsModDF = bandsDF.withColumnRenamed("id", "bandId")
-  guitaristsDF.join(bandsModDF, guitaristsDF.col("band") === bandsModDF.col("bandId"))
+  guitaristsDF.join(
+    bandsModDF,
+    guitaristsDF.col("band") === bandsModDF.col("bandId")
+  )
 
   // using complex types
-  guitaristsDF.join(guitarsDF.withColumnRenamed("id", "guitarId"), expr("array_contains(guitars, guitarId)"))
+  guitaristsDF.join(
+    guitarsDF.withColumnRenamed("id", "guitarId"),
+    expr("array_contains(guitars, guitarId)")
+  )
 
-  /**
-    * Exercises
+  /** Exercises
     *
     * 1. show all employees and their max salary
     * 2. show all employees who were never managers
@@ -87,7 +92,8 @@ object Joins extends App {
   val titlesDF = readTable("titles")
 
   // 1
-  val maxSalariesPerEmpNoDF = salariesDF.groupBy("emp_no").agg(max("salary").as("maxSalary"))
+  val maxSalariesPerEmpNoDF =
+    salariesDF.groupBy("emp_no").agg(max("salary").as("maxSalary"))
   val employeesSalariesDF = employeesDF.join(maxSalariesPerEmpNoDF, "emp_no")
 
   // 2
@@ -98,10 +104,11 @@ object Joins extends App {
   )
 
   // 3
-  val mostRecentJobTitlesDF = titlesDF.groupBy("emp_no", "title").agg(max("to_date"))
-  val bestPaidEmployeesDF = employeesSalariesDF.orderBy(col("maxSalary").desc).limit(10)
+  val mostRecentJobTitlesDF =
+    titlesDF.groupBy("emp_no", "title").agg(max("to_date"))
+  val bestPaidEmployeesDF =
+    employeesSalariesDF.orderBy(col("maxSalary").desc).limit(10)
   val bestPaidJobsDF = bestPaidEmployeesDF.join(mostRecentJobTitlesDF, "emp_no")
 
   bestPaidJobsDF.show()
 }
-

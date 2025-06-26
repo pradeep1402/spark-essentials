@@ -6,7 +6,8 @@ import org.apache.spark.sql.types.FloatType
 
 object CommonTypes extends App {
 
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName("Common Spark Types")
     .config("spark.master", "local")
     .getOrCreate()
@@ -26,19 +27,28 @@ object CommonTypes extends App {
   moviesDF.select("Title").where(dramaFilter)
   // + multiple ways of filtering
 
-  val moviesWithGoodnessFlagsDF = moviesDF.select(col("Title"), preferredFilter.as("good_movie"))
+  val moviesWithGoodnessFlagsDF =
+    moviesDF.select(col("Title"), preferredFilter.as("good_movie"))
   // filter on a boolean column
-  moviesWithGoodnessFlagsDF.where("good_movie") // where(col("good_movie") === "true")
+  moviesWithGoodnessFlagsDF.where(
+    "good_movie"
+  ) // where(col("good_movie") === "true")
 
   // negations
   moviesWithGoodnessFlagsDF.where(not(col("good_movie")))
 
   // Numbers
   // math operators
-  val moviesAvgRatingsDF = moviesDF.select(col("Title"), (col("Rotten_Tomatoes_Rating") / 10 + col("IMDB_Rating")) / 2)
+  val moviesAvgRatingsDF = moviesDF.select(
+    col("Title"),
+    (col("Rotten_Tomatoes_Rating") / 10 + col("IMDB_Rating")) / 2
+  )
 
   // correlation = number between -1 and 1
-  println(moviesDF.stat.corr("Rotten_Tomatoes_Rating", "IMDB_Rating") /* corr is an ACTION */)
+  println(
+    moviesDF.stat
+      .corr("Rotten_Tomatoes_Rating", "IMDB_Rating") /* corr is an ACTION */
+  )
 
   // Strings
 
@@ -54,18 +64,20 @@ object CommonTypes extends App {
 
   // regex
   val regexString = "volkswagen|vw"
-  val vwDF = carsDF.select(
-    col("Name"),
-    regexp_extract(col("Name"), regexString, 0).as("regex_extract")
-  ).where(col("regex_extract") =!= "").drop("regex_extract")
+  val vwDF = carsDF
+    .select(
+      col("Name"),
+      regexp_extract(col("Name"), regexString, 0).as("regex_extract")
+    )
+    .where(col("regex_extract") =!= "")
+    .drop("regex_extract")
 
   vwDF.select(
     col("Name"),
     regexp_replace(col("Name"), regexString, "People's Car").as("regex_replace")
   )
 
-  /**
-    * Exercise
+  /** Exercise
     *
     * Filter the cars DF by a list of car names obtained by an API call
     * Versions:
@@ -76,17 +88,24 @@ object CommonTypes extends App {
   def getCarNames: List[String] = List("Volkswagen", "Mercedes-Benz", "Ford")
 
   // version 1 - regex
-  val complexRegex = getCarNames.map(_.toLowerCase()).mkString("|") // volskwagen|mercedes-benz|ford
-  carsDF.select(
-    col("Name"),
-    regexp_extract(col("Name"), complexRegex, 0).as("regex_extract")
-  ).where(col("regex_extract") =!= "")
+  val complexRegex = getCarNames
+    .map(_.toLowerCase())
+    .mkString("|") // volskwagen|mercedes-benz|ford
+  carsDF
+    .select(
+      col("Name"),
+      regexp_extract(col("Name"), complexRegex, 0).as("regex_extract")
+    )
+    .where(col("regex_extract") =!= "")
     .drop("regex_extract")
 
   // version 2 - contains
-  val carNameFilters = getCarNames.map(_.toLowerCase()).map(name => col("Name").contains(name))
-  val bigFilter = carNameFilters.fold(lit(false))((combinedFilter, newCarNameFilter) => combinedFilter or newCarNameFilter)
+  val carNameFilters =
+    getCarNames.map(_.toLowerCase()).map(name => col("Name").contains(name))
+  val bigFilter =
+    carNameFilters.fold(lit(false))((combinedFilter, newCarNameFilter) =>
+      combinedFilter or newCarNameFilter
+    )
   carsDF.filter(bigFilter).show
-
 
 }

@@ -5,15 +5,18 @@ import org.apache.spark.sql.functions._
 
 object TaxiApplication extends App {
 
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .config("spark.master", "local")
     .appName("Taxi Big Data Application")
     .getOrCreate()
   import spark.implicits._
 
-  val bigTaxiDF = spark.read.load("path/to/your/dataset/NYC_taxi_2009-2016.parquet")
+  val bigTaxiDF =
+    spark.read.load("path/to/your/dataset/NYC_taxi_2009-2016.parquet")
 
-  val taxiDF = spark.read.load("src/main/resources/data/yellow_taxi_jan_25_2018")
+  val taxiDF =
+    spark.read.load("src/main/resources/data/yellow_taxi_jan_25_2018")
   taxiDF.printSchema()
 
   val taxiZonesDF = spark.read
@@ -22,8 +25,7 @@ object TaxiApplication extends App {
     .csv("src/main/resources/data/taxi_zones.csv")
   taxiZonesDF.printSchema()
 
-  /**
-    * Questions:
+  /** Questions:
     *
     * 1. Which zones have the most pickups/dropoffs overall?
     * 2. What are the peak hours for taxi?
@@ -33,18 +35,19 @@ object TaxiApplication extends App {
     * 6. How are people paying for the ride, on long/short trips?
     * 7. How is the payment type evolving with time?
     * 8. Can we explore a ride-sharing opportunity by grouping close short trips?
-    *
     */
 
   // 1
-  val pickupsByTaxiZoneDF = taxiDF.groupBy("PULocationID")
+  val pickupsByTaxiZoneDF = taxiDF
+    .groupBy("PULocationID")
     .agg(count("*").as("totalTrips"))
     .join(taxiZonesDF, col("PULocationID") === col("LocationID"))
     .drop("LocationID", "service_zone")
     .orderBy(col("totalTrips").desc_nulls_last)
 
   // 1b - group by borough
-  val pickupsByBoroughDF = pickupsByTaxiZoneDF.groupBy(col("Borough"))
+  val pickupsByBoroughDF = pickupsByTaxiZoneDF
+    .groupBy(col("Borough"))
     .agg(sum(col("totalTrips")).as("totalTrips"))
     .orderBy(col("totalTrips").desc_nulls_last)
 
@@ -67,7 +70,8 @@ object TaxiApplication extends App {
     max("distance").as("max")
   )
 
-  val tripsWithLengthDF = taxiDF.withColumn("isLong", col("trip_distance") >= longDistanceThreshold)
+  val tripsWithLengthDF =
+    taxiDF.withColumn("isLong", col("trip_distance") >= longDistanceThreshold)
   val tripsByLengthDF = tripsWithLengthDF.groupBy("isLong").count()
 
   // 4
@@ -80,7 +84,8 @@ object TaxiApplication extends App {
   // 5
   def pickupDropoffPopularity(predicate: Column) = tripsWithLengthDF
     .where(predicate)
-    .groupBy("PULocationID", "DOLocationID").agg(count("*").as("totalTrips"))
+    .groupBy("PULocationID", "DOLocationID")
+    .agg(count("*").as("totalTrips"))
     .join(taxiZonesDF, col("PULocationID") === col("LocationID"))
     .withColumnRenamed("Zone", "Pickup_Zone")
     .drop("LocationID", "Borough", "service_zone")
@@ -92,25 +97,39 @@ object TaxiApplication extends App {
 
   // 6
   val ratecodeDistributionDF = taxiDF
-    .groupBy(col("RatecodeID")).agg(count("*").as("totalTrips"))
+    .groupBy(col("RatecodeID"))
+    .agg(count("*").as("totalTrips"))
     .orderBy(col("totalTrips").desc_nulls_last)
 
   // 7
   val ratecodeEvolution = taxiDF
-    .groupBy(to_date(col("tpep_pickup_datetime")).as("pickup_day"), col("RatecodeID"))
+    .groupBy(
+      to_date(col("tpep_pickup_datetime")).as("pickup_day"),
+      col("RatecodeID")
+    )
     .agg(count("*").as("totalTrips"))
     .orderBy(col("pickup_day"))
 
   // 8
-  val passengerCountDF = taxiDF.where(col("passenger_count") < 3).select(count("*"))
+  val passengerCountDF =
+    taxiDF.where(col("passenger_count") < 3).select(count("*"))
   passengerCountDF.show()
   taxiDF.select(count("*")).show()
 
   val groupAttemptsDF = taxiDF
-    .select(round(unix_timestamp(col("tpep_pickup_datetime")) / 300).cast("integer").as("fiveMinId"), col("PULocationID"), col("total_amount"))
+    .select(
+      round(unix_timestamp(col("tpep_pickup_datetime")) / 300)
+        .cast("integer")
+        .as("fiveMinId"),
+      col("PULocationID"),
+      col("total_amount")
+    )
     .where(col("passenger_count") < 3)
     .groupBy(col("fiveMinId"), col("PULocationID"))
-    .agg(count("*").as("total_trips"), sum(col("total_amount")).as("total_amount"))
+    .agg(
+      count("*").as("total_trips"),
+      sum(col("total_amount")).as("total_amount")
+    )
     .orderBy(col("total_trips").desc_nulls_last)
     .withColumn("approximate_datetime", from_unixtime(col("fiveMinId") * 300))
     .drop("fiveMinId")
@@ -121,16 +140,30 @@ object TaxiApplication extends App {
   val percentAcceptGrouping = 0.3
   val discount = 5
   val extraCost = 2
-  val avgCostReduction = 0.6 * taxiDF.select(avg(col("total_amount"))).as[Double].take(1)(0)
+  val avgCostReduction =
+    0.6 * taxiDF.select(avg(col("total_amount"))).as[Double].take(1)(0)
 
   val groupingEstimateEconomicImpactDF = groupAttemptsDF
     .withColumn("groupedRides", col("total_trips") * percentGroupAttempt)
-    .withColumn("acceptedGroupedRidesEconomicImpact", col("groupedRides") * percentAcceptGrouping * (avgCostReduction - discount))
-    .withColumn("rejectedGroupedRidesEconomicImpact", col("groupedRides") * (1 - percentAcceptGrouping) * extraCost)
-    .withColumn("totalImpact", col("acceptedGroupedRidesEconomicImpact") + col("rejectedGroupedRidesEconomicImpact"))
+    .withColumn(
+      "acceptedGroupedRidesEconomicImpact",
+      col(
+        "groupedRides"
+      ) * percentAcceptGrouping * (avgCostReduction - discount)
+    )
+    .withColumn(
+      "rejectedGroupedRidesEconomicImpact",
+      col("groupedRides") * (1 - percentAcceptGrouping) * extraCost
+    )
+    .withColumn(
+      "totalImpact",
+      col("acceptedGroupedRidesEconomicImpact") + col(
+        "rejectedGroupedRidesEconomicImpact"
+      )
+    )
 
-  val totalProfitDF = groupingEstimateEconomicImpactDF.select(sum(col("totalImpact")).as("total"))
+  val totalProfitDF =
+    groupingEstimateEconomicImpactDF.select(sum(col("totalImpact")).as("total"))
   // 40k/day = 12 million/year!!!
-
 
 }

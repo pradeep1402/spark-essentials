@@ -2,13 +2,10 @@ package part4sql
 
 object SparkShell extends App {
 
-  /**
-    * This file contains a dummy application where I added what we learned in the Spark Shell lecture.
+  /** This file contains a dummy application where I added what we learned in the Spark Shell lecture.
     */
 
-  /**
-    *
-    * To setup the Spark cluster in Docker:
+  /** To setup the Spark cluster in Docker:
     *
     *   1. Build the Docker containers
     *       ./build-images.sh
@@ -32,10 +29,7 @@ object SparkShell extends App {
     *   - tables can be accessed in Spark SQL in the context of a database (which is just a form of organizing them)
     */
 
-
-
-  /**
-    * The commands we wrote in the lecture:
+  /** The commands we wrote in the lecture:
     *
     * // if you don't define a database, everything that you do will be related to the default database
     * show databases;
@@ -59,15 +53,9 @@ object SparkShell extends App {
     * select * from persons;
     *
     * Once you have tables in your database(s), you can now write any kind of select statement, no matter how complex.
-    *
-    *
     */
 
-
-
-  /**
-    *
-    * An interesting distinction is the difference between a MANAGED vs an EXTERNAL table.
+  /** An interesting distinction is the difference between a MANAGED vs an EXTERNAL table.
     * For every table, Spark stores table metadata (column information, format, serialization, partitioning etc).
     *   - A MANAGED table means that Spark is responsible for storing both data and metadata.
     *     When you drop a table, you also drop its data.
@@ -92,6 +80,6 @@ object SparkShell extends App {
     * // you can also explicitly create an external table
     * create external table persons_external(id integer, name string) row format delimited fields terminated by ',' location "/home/rtjvm/data/persons"
     * insert into persons_external (select * from persons);
-   */
+    */
 
 }

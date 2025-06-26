@@ -4,8 +4,7 @@ import org.apache.spark.sql.SparkSession
 
 object SparkJobAnatomy extends App {
 
-  /**
-    * This is the code we wrote during the Spark Job Anatomy lecture.
+  /** This is the code we wrote during the Spark Job Anatomy lecture.
     * We tested these RDDs, DataFrames and Datasets in the Spark shell in the cluster.
     *
     * This code is not meant to be run standalone (although of course you could).
@@ -15,7 +14,8 @@ object SparkJobAnatomy extends App {
     * You can copy these expressions and paste them (even multi-line) into the Spark shell.
     */
 
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .config("spark.master", "local")
     .appName("Spark Job Anatomy")
     .getOrCreate()
@@ -48,12 +48,10 @@ object SparkJobAnatomy extends App {
   ds1.show
   // one stage, one task
 
-  /**
-    *
-    * Complex job 1
+  /** Complex job 1
     * This executes two JOBS!
     * The Spark optimizer is able to pre-determine the job/stage/task planning before running any code.
-   */
+    */
   val ds2 = spark.range(1, 100000, 2)
   val ds3 = ds1.repartition(7)
   val ds4 = ds2.repartition(9)
@@ -62,8 +60,7 @@ object SparkJobAnatomy extends App {
   val sum = joined.selectExpr("sum(id)")
   sum.show
 
-  /**
-    * Complex job 2
+  /** Complex job 2
     * This executes a single job with a massive DAG, and 6 stages:
     * - two for the toDF calls, 6 tasks each
     * - two for the repartitioning of both datasets (7 and 9 tasks respectively)

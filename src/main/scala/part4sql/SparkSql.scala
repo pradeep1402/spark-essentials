@@ -5,7 +5,8 @@ import org.apache.spark.sql.functions._
 
 object SparkSql extends App {
 
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName("Spark SQL Practice")
     .config("spark.master", "local")
     .config("spark.sql.warehouse.dir", "src/main/resources/warehouse")
@@ -22,8 +23,7 @@ object SparkSql extends App {
 
   // use Spark SQL
   carsDF.createOrReplaceTempView("cars")
-  val americanCarsDF = spark.sql(
-    """
+  val americanCarsDF = spark.sql("""
       |select Name from cars where Origin = 'USA'
     """.stripMargin)
 
@@ -47,7 +47,10 @@ object SparkSql extends App {
     .option("dbtable", s"public.$tableName")
     .load()
 
-  def transferTables(tableNames: List[String], shouldWriteToWarehouse: Boolean = false) = tableNames.foreach { tableName =>
+  def transferTables(
+      tableNames: List[String],
+      shouldWriteToWarehouse: Boolean = false
+  ) = tableNames.foreach { tableName =>
     val tableDF = readTable(tableName)
     tableDF.createOrReplaceTempView(tableName)
 
@@ -58,20 +61,21 @@ object SparkSql extends App {
     }
   }
 
-  transferTables(List(
-    "employees",
-    "departments",
-    "titles",
-    "dept_emp",
-    "salaries",
-    "dept_manager")
+  transferTables(
+    List(
+      "employees",
+      "departments",
+      "titles",
+      "dept_emp",
+      "salaries",
+      "dept_manager"
+    )
   )
 
   // read DF from loaded Spark tables
   val employeesDF2 = spark.read.table("employees")
 
-  /**
-    * Exercises
+  /** Exercises
     *
     * 1. Read the movies DF and store it as a Spark table in the rtjvm database.
     * 2. Count how many employees were hired in between Jan 1 1999 and Jan 1 2000.
@@ -110,8 +114,9 @@ object SparkSql extends App {
   )
 
   // 4
-  spark.sql(
-    """
+  spark
+    .sql(
+      """
       |select avg(s.salary) payments, d.dept_name
       |from employees e, dept_emp de, salaries s, departments d
       |where e.hire_date > '1999-01-01' and e.hire_date < '2000-01-01'
@@ -122,5 +127,6 @@ object SparkSql extends App {
       |order by payments desc
       |limit 1
     """.stripMargin
-  ).show()
+    )
+    .show()
 }

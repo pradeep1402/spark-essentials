@@ -7,7 +7,8 @@ import scala.io.Source
 
 object RDDs extends App {
 
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName("Introduction to RDDs")
     .config("spark.master", "local")
     .getOrCreate()
@@ -23,7 +24,8 @@ object RDDs extends App {
   case class StockValue(symbol: String, date: String, price: Double)
   def readStocks(filename: String) = {
     val source = Source.fromFile(filename)
-    val stockValues = source.getLines()
+    val stockValues = source
+      .getLines()
       .drop(1)
       .map(line => line.split(","))
       .map(tokens => StockValue(tokens(0), tokens(1), tokens(2).toDouble))
@@ -32,10 +34,12 @@ object RDDs extends App {
     stockValues
   }
 
-  val stocksRDD = sc.parallelize(readStocks("src/main/resources/data/stocks.csv"))
+  val stocksRDD =
+    sc.parallelize(readStocks("src/main/resources/data/stocks.csv"))
 
   // 2b - reading from files
-  val stocksRDD2 = sc.textFile("src/main/resources/data/stocks.csv")
+  val stocksRDD2 = sc
+    .textFile("src/main/resources/data/stocks.csv")
     .map(line => line.split(","))
     .filter(tokens => tokens(0).toUpperCase() == tokens(0))
     .map(tokens => StockValue(tokens(0), tokens(1), tokens(2).toDouble))
@@ -67,7 +71,9 @@ object RDDs extends App {
 
   // min and max
   implicit val stockOrdering: Ordering[StockValue] =
-    Ordering.fromLessThan[StockValue]((sa: StockValue, sb: StockValue) => sa.price < sb.price)
+    Ordering.fromLessThan[StockValue]((sa: StockValue, sb: StockValue) =>
+      sa.price < sb.price
+    )
   val minMsft = msftRDD.min() // action
 
   // reduce
@@ -90,13 +96,13 @@ object RDDs extends App {
    */
 
   // coalesce
-  val coalescedRDD = repartitionedStocksRDD.coalesce(15) // does NOT involve shuffling
+  val coalescedRDD =
+    repartitionedStocksRDD.coalesce(15) // does NOT involve shuffling
   coalescedRDD.toDF.write
     .mode(SaveMode.Overwrite)
     .parquet("src/main/resources/data/stocks15")
 
-  /**
-    * Exercises
+  /** Exercises
     *
     * 1. Read the movies.json as an RDD.
     * 2. Show the distinct genres as an RDD.
@@ -112,7 +118,11 @@ object RDDs extends App {
     .json("src/main/resources/data/movies.json")
 
   val moviesRDD = moviesDF
-    .select(col("Title").as("title"), col("Major_Genre").as("genre"), col("IMDB_Rating").as("rating"))
+    .select(
+      col("Title").as("title"),
+      col("Major_Genre").as("genre"),
+      col("IMDB_Rating").as("rating")
+    )
     .where(col("genre").isNotNull and col("rating").isNotNull)
     .as[Movie]
     .rdd
@@ -121,14 +131,16 @@ object RDDs extends App {
   val genresRDD = moviesRDD.map(_.genre).distinct()
 
   // 3
-  val goodDramasRDD = moviesRDD.filter(movie => movie.genre == "Drama" && movie.rating > 6)
+  val goodDramasRDD =
+    moviesRDD.filter(movie => movie.genre == "Drama" && movie.rating > 6)
 
   // 4
   case class GenreAvgRating(genre: String, rating: Double)
 
-  val avgRatingByGenreRDD = moviesRDD.groupBy(_.genre).map {
-    case (genre, movies) => GenreAvgRating(genre, movies.map(_.rating).sum / movies.size)
-  }
+  val avgRatingByGenreRDD =
+    moviesRDD.groupBy(_.genre).map { case (genre, movies) =>
+      GenreAvgRating(genre, movies.map(_.rating).sum / movies.size)
+    }
 
   avgRatingByGenreRDD.toDF.show
   moviesRDD.toDF.groupBy(col("genre")).avg("rating").show
