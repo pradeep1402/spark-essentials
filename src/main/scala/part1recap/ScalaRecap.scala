@@ -1,21 +1,27 @@
 package part1recap
 
 import scala.concurrent.Future
+import scala.language.implicitConversions
 import scala.util.{Failure, Success}
 
 object ScalaRecap extends App {
 
   // values and variables
-  val aBoolean: Boolean = false
+  private val aBoolean: Boolean = false
+  println(s"It's a boolean: $aBoolean")
 
   // expressions
-  val anIfExpression = if(2 > 3) "bigger" else "smaller"
+  private val anIfExpression = if (2 > 3) "bigger" else "smaller"
+  println(s"An if expression: $anIfExpression")
 
   // instructions vs expressions
-  val theUnit = println("Hello, Scala") // Unit = "no meaningful value" = void in other languages
+  val theUnit: Unit = println(
+    "Hello, Scala"
+  ) // Unit = "no meaningful value" = void in other languages
 
   // functions
-  def myFunction(x: Int) = 42
+  private def myFunction(x: Int) = 42
+  println(s"Calling the function: ${myFunction(12)}")
 
   // OOP
   class Animal
@@ -42,67 +48,73 @@ object ScalaRecap extends App {
   val y = 1.+(2)
 
   // Functional Programming
-  val incrementer: Int => Int = x => x + 1
+  private val incrementer: Int => Int = x => x + 1
   val incremented = incrementer(42)
+  println(s"Incremented value for 42: $incremented")
 
   // map, flatMap, filter
-  val processedList = List(1,2,3).map(incrementer)
+  val processedList = List(1, 2, 3).map(incrementer)
 
   // Pattern Matching
-  val unknown: Any = 45
+  private val unknown: Any = 45
   val ordinal = unknown match {
     case 1 => "first"
     case 2 => "second"
     case _ => "unknown"
   }
+  println("pattern matching: " + ordinal)
 
   // try-catch
   try {
     throw new NullPointerException
   } catch {
     case _: NullPointerException => "some returned value"
-    case _: Throwable => "something else"
+    case _: Throwable            => "something else"
   }
 
   // Future
   import scala.concurrent.ExecutionContext.Implicits.global
-  val aFuture = Future {
+  private val aFuture = Future {
     // some expensive computation, runs on another thread
     42
   }
 
   aFuture.onComplete {
     case Success(meaningOfLife) => println(s"I've found $meaningOfLife")
-    case Failure(ex) => println(s"I have failed: $ex")
+    case Failure(ex)            => println(s"I have failed: $ex")
   }
 
   // Partial functions
-  val aPartialFunction: PartialFunction[Int, Int] = {
+  private val aPartialFunction: PartialFunction[Int, Int] = {
     case 1 => 43
     case 8 => 56
     case _ => 999
   }
 
+  println(aPartialFunction(2))
+
   // Implicits
 
   // auto-injection by the compiler
-  def methodWithImplicitArgument(implicit x: Int) = x + 43
-  implicit val implicitInt = 67
-  val implicitCall = methodWithImplicitArgument
+  private def methodWithImplicitArgument(implicit x: Int) = x + 43
+  implicit val implicitInt: Int = 67
+  private val implicitCall = methodWithImplicitArgument
+
+  println(implicitCall)
 
   // implicit conversions - implicit defs
   case class Person(name: String) {
-    def greet = println(s"Hi, my name is $name")
+    def greet(): Unit = println(s"Hi, my name is $name")
   }
 
-  implicit def fromStringToPerson(name: String) = Person(name)
-  "Bob".greet // fromStringToPerson("Bob").greet
+  implicit def fromStringToPerson(name: String): Person = Person(name)
+  "Bob".greet() // fromStringToPerson("Bob").greet
 
   // implicit conversion - implicit classes
   implicit class Dog(name: String) {
-    def bark = println("Bark!")
+    def bark(): Unit = println("Bark!")
   }
-  "Lassie".bark
+  "Lassie".bark()
 
   /*
     - local scope
