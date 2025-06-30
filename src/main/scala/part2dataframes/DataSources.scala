@@ -11,7 +11,9 @@ object DataSources {
       .appName("Data Sources and Formats")
       .master("local[*]")
       .getOrCreate()
+
     spark.sparkContext.setLogLevel("WARN")
+
     val carsSchema = StructType(
       Array(
         StructField("Name", StringType),
