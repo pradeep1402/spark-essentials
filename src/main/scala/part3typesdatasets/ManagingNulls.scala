@@ -11,23 +11,33 @@ object ManagingNulls extends App {
     .config("spark.master", "local")
     .getOrCreate()
 
+  spark.sparkContext.setLogLevel("WARN")
+
   val moviesDF = spark.read
     .option("inferSchema", "true")
     .json("src/main/resources/data/movies.json")
 
   // select the first non-null value
-  moviesDF.select(
-    col("Title"),
-    col("Rotten_Tomatoes_Rating"),
-    col("IMDB_Rating"),
-    coalesce(col("Rotten_Tomatoes_Rating"), col("IMDB_Rating") * 10)
-  )
+  moviesDF
+    .select(
+      col("Title"),
+      col("Rotten_Tomatoes_Rating"),
+      col("IMDB_Rating"),
+      coalesce(col("Rotten_Tomatoes_Rating"), col("IMDB_Rating") * 10)
+    )
+    .show()
 
   // checking for nulls
-  moviesDF.select("*").where(col("Rotten_Tomatoes_Rating").isNull)
+  moviesDF
+    .select(col("Title"), col("Rotten_Tomatoes_Rating"))
+    .where(col("Rotten_Tomatoes_Rating").isNull)
+    .show()
 
   // nulls when ordering
-  moviesDF.orderBy(col("IMDB_Rating").desc_nulls_last)
+  moviesDF
+    .orderBy(col("IMDB_Rating").desc_nulls_last)
+    .select("Title", "IMDB_Rating")
+    .show()
 
   // removing nulls
   moviesDF
@@ -37,13 +47,15 @@ object ManagingNulls extends App {
 
   // replace nulls
   moviesDF.na.fill(0, List("IMDB_Rating", "Rotten_Tomatoes_Rating"))
-  moviesDF.na.fill(
-    Map(
-      "IMDB_Rating" -> 0,
-      "Rotten_Tomatoes_Rating" -> 10,
-      "Director" -> "Unknown"
+  moviesDF.na
+    .fill(
+      Map(
+        "IMDB_Rating" -> 0,
+        "Rotten_Tomatoes_Rating" -> 10,
+        "Director" -> "Unknown"
+      )
     )
-  )
+    .show(false)
 
   // complex operations
   moviesDF
