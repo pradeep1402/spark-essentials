@@ -2,7 +2,6 @@ package part3typesdatasets
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.FloatType
 
 object CommonTypes extends App {
 
@@ -12,37 +11,43 @@ object CommonTypes extends App {
     .config("spark.master", "local")
     .getOrCreate()
 
+  spark.sparkContext.setLogLevel("WARN")
+
   val moviesDF = spark.read
     .option("inferSchema", "true")
     .json("src/main/resources/data/movies.json")
 
   // adding a plain value to a DF
-  moviesDF.select(col("Title"), lit(47).as("plain_value"))
+  moviesDF.select(col("Title"), lit(null).as("plain_value")).show()
 
   // Booleans
   val dramaFilter = col("Major_Genre") equalTo "Drama"
   val goodRatingFilter = col("IMDB_Rating") > 7.0
   val preferredFilter = dramaFilter and goodRatingFilter
 
-  moviesDF.select("Title").where(dramaFilter)
+  moviesDF.select("Title").where(dramaFilter).show()
   // + multiple ways of filtering
 
   val moviesWithGoodnessFlagsDF =
     moviesDF.select(col("Title"), preferredFilter.as("good_movie"))
   // filter on a boolean column
-  moviesWithGoodnessFlagsDF.where(
-    "good_movie"
-  ) // where(col("good_movie") === "true")
+  moviesWithGoodnessFlagsDF
+    .where(
+      "good_movie"
+    )
+    .show() // where(col("good_movie") === "true")
 
   // negations
-  moviesWithGoodnessFlagsDF.where(not(col("good_movie")))
+  moviesWithGoodnessFlagsDF.where(not(col("good_movie"))).show()
 
   // Numbers
   // math operators
-  val moviesAvgRatingsDF = moviesDF.select(
-    col("Title"),
-    (col("Rotten_Tomatoes_Rating") / 10 + col("IMDB_Rating")) / 2
-  )
+  moviesDF
+    .select(
+      col("Title"),
+      (col("Rotten_Tomatoes_Rating") / 10 + col("IMDB_Rating")) / 2
+    )
+    .show()
 
   // correlation = number between -1 and 1
   println(
@@ -57,10 +62,11 @@ object CommonTypes extends App {
     .json("src/main/resources/data/cars.json")
 
   // capitalization: initcap, lower, upper
-  carsDF.select(initcap(col("Name")))
+  carsDF.select(initcap(col("Name"))).show(false)
+  carsDF.select(lower(col("Name"))).show(false)
 
   // contains
-  carsDF.select("*").where(col("Name").contains("volkswagen"))
+  carsDF.select("*").where(col("Name").contains("volkswagen")).show()
 
   // regex
   val regexString = "volkswagen|vw"
@@ -72,10 +78,31 @@ object CommonTypes extends App {
     .where(col("regex_extract") =!= "")
     .drop("regex_extract")
 
-  vwDF.select(
-    col("Name"),
-    regexp_replace(col("Name"), regexString, "People's Car").as("regex_replace")
-  )
+  vwDF.show()
+
+  vwDF
+    .select(
+      col("Name"),
+      regexp_replace(col("Name"), regexString, "People's Car")
+        .as("regex_replace")
+    )
+    .show(false)
+
+  val apiCars = List("Volkswagen", "Mercedes-Benz").map(_.toLowerCase())
+
+  carsDF
+    .filter(car => {
+      apiCars.exists(apiCar =>
+        car.getAs[String]("Name").toLowerCase().contains(apiCar)
+      )
+    })
+    .show(false)
+
+  val apiRegx = apiCars.mkString(".*|")
+
+  carsDF
+    .filter(_.getAs[String]("Name").toLowerCase().matches(apiRegx))
+    .show(false)
 
   /** Exercise
     *
@@ -100,9 +127,9 @@ object CommonTypes extends App {
     .drop("regex_extract")
 
   // version 2 - contains
-  val carNameFilters =
+  private val carNameFilters =
     getCarNames.map(_.toLowerCase()).map(name => col("Name").contains(name))
-  val bigFilter =
+  private val bigFilter =
     carNameFilters.fold(lit(false))((combinedFilter, newCarNameFilter) =>
       combinedFilter or newCarNameFilter
     )
