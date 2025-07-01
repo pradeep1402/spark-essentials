@@ -1,9 +1,7 @@
 package part3typesdatasets
 
-import java.sql.Date
-
-import org.apache.spark.sql.{DataFrame, Dataset, Encoders, SparkSession}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql._
 
 object Datasets extends App {
 
@@ -12,6 +10,8 @@ object Datasets extends App {
     .appName("Datasets")
     .config("spark.master", "local")
     .getOrCreate()
+
+  spark.sparkContext.setLogLevel("WARN")
 
   val numbersDF: DataFrame = spark.read
     .format("csv")
@@ -22,7 +22,7 @@ object Datasets extends App {
   numbersDF.printSchema()
 
   // convert a DF to a Dataset
-  implicit val intEncoder = Encoders.scalaInt
+  implicit val intEncoder: Encoder[Int] = Encoders.scalaInt
   val numbersDS: Dataset[Int] = numbersDF.as[Int]
 
   // dataset of a complex type
@@ -45,17 +45,23 @@ object Datasets extends App {
     .json(s"src/main/resources/data/$filename")
 
   val carsDF = readDF("cars.json")
+  carsDF.show()
 
   // 3 - define an encoder (importing the implicits)
   import spark.implicits._
   // 4 - convert the DF to DS
-  val carsDS = carsDF.as[Car]
+  private val carsDS = carsDF.as[Car]
 
   // DS collection functions
-  numbersDS.filter(_ < 100)
+  numbersDS.filter(_ < 100).show()
 
   // map, flatMap, fold, reduce, for comprehensions ...
-  val carNamesDS = carsDS.map(car => car.Name.toUpperCase())
+  carsDS.map(car => car.Name.toUpperCase()).show()
+
+  println(carsDS.count())
+  println(carsDS.filter(car => car.Horsepower.getOrElse(0L) > 140).count())
+
+  println(carsDS.map(_.Horsepower.getOrElse(0L)).reduce(_ + _) / carsDS.count())
 
   /** Exercises
     *
@@ -98,6 +104,8 @@ object Datasets extends App {
       "inner"
     )
 
+  guitarPlayerBandsDS.show(false)
+
   /** Exercise: join the guitarsDS and guitarPlayersDS, in an outer join
     * (hint: use array_contains)
     */
@@ -112,7 +120,7 @@ object Datasets extends App {
 
   // Grouping DS
 
-  val carsGroupedByOrigin = carsDS
+  carsDS
     .groupByKey(_.Origin)
     .count()
     .show()
