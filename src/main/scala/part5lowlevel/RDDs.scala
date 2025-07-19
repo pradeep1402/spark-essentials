@@ -13,12 +13,16 @@ object RDDs extends App {
     .config("spark.master", "local")
     .getOrCreate()
 
+  spark.sparkContext.setLogLevel("WARN")
+
   // the SparkContext is the entry point for low-level APIs, including RDDs
   val sc = spark.sparkContext
 
   // 1 - parallelize an existing collection
   val numbers = 1 to 1000000
   val numbersRDD = sc.parallelize(numbers)
+  val nums = numbersRDD.countApproxDistinct()
+  println("distinct count", nums)
 
   // 2 - reading from files
   case class StockValue(symbol: String, date: String, price: Double)
@@ -34,8 +38,11 @@ object RDDs extends App {
     stockValues
   }
 
-  val stocksRDD =
+  private val stocksRDD = {
     sc.parallelize(readStocks("src/main/resources/data/stocks.csv"))
+  }
+
+  println(stocksRDD)
 
   // 2b - reading from files
   val stocksRDD2 = sc
@@ -77,7 +84,7 @@ object RDDs extends App {
   val minMsft = msftRDD.min() // action
 
   // reduce
-  numbersRDD.reduce(_ + _)
+  println("reduce", numbersRDD.reduce(_ + _))
 
   // grouping
   val groupedStocksRDD = stocksRDD.groupBy(_.symbol)
