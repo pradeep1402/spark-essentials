@@ -43,20 +43,27 @@ object TaxiApplication {
       .join(taxiZonesDF, col("PULocationID") === col("LocationID"))
       .groupBy("Borough")
       .agg(sum(col("count")))
-      .orderBy($"count".desc_nulls_last)
+      .orderBy($"sum(count)".desc_nulls_last)
 
     pickups.show()
 
     val dropOff = taxiDF
       .groupBy("DOLocationID")
       .count()
-      .join(taxiZonesDF, col("DOLocation") === col("LocationID"))
+      .join(taxiZonesDF, col("DOLocationID") === col("LocationID"))
       .groupBy("Borough")
-      .agg(sum("count"))
-      .orderBy($"count".desc_nulls_last)
+      .agg(sum($"count"))
+      .orderBy($"sum(count)".desc_nulls_last)
 
     dropOff.show()
 
     // 2. What are the peak hours for taxi?
+    taxiDF
+      .withColumn("hours", hour(col("tpep_pickup_datetime")))
+      .groupBy("hours")
+      .agg(count("*").alias("total_rides"))
+      .orderBy(col("total_rides").desc_nulls_last)
+      .select(col("total_rides"), col("hours"))
+      .show()
   }
 }
