@@ -28,8 +28,6 @@ object TaxiApplication {
     taxiDF.show(false)
 
     /** Questions:
-      * 5. What are the top 3 pickup/dropoff zones for long/short trips?
-      * 6. How are people paying for the ride, on long/short trips?
       * 7. How is the payment type evolving with time?
       * 8. Can we explore a ride-sharing opportunity by grouping close short trips?
       */
@@ -87,5 +85,13 @@ object TaxiApplication {
       .sort($"count".desc)
       .show()
 
+    // 5. What are the top 3 pickup/dropoff zones for long/short trips?
+    tripsWithLengthDF
+      .groupBy(col("PULocationID"))
+      .count()
+      .orderBy($"count".desc)
+      .join(taxiZonesDF, col("LocationID") === col("PULocationID"))
+      .select(col("Borough"), col("Zone"), col("service_zone"), col("count"))
+      .show()
   }
 }
