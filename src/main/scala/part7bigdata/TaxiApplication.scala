@@ -28,7 +28,6 @@ object TaxiApplication {
     taxiDF.show(false)
 
     /** Questions:
-      * 4. What are the peak hours for long/short trips?
       * 5. What are the top 3 pickup/dropoff zones for long/short trips?
       * 6. How are people paying for the ride, on long/short trips?
       * 7. How is the payment type evolving with time?
@@ -74,5 +73,19 @@ object TaxiApplication {
         lit(mean(col("trip_distance")))
       )
       .show()
+
+    val longDistanceThreshold = 30
+    val tripsWithLengthDF =
+      taxiDF.withColumn("isLong", col("trip_distance") >= longDistanceThreshold)
+
+    tripsWithLengthDF.show()
+
+    // 4. What are the peak hours for long/short trips?
+    tripsWithLengthDF
+      .groupBy(hour(col("tpep_pickup_datetime")))
+      .count()
+      .sort($"count".desc)
+      .show()
+
   }
 }
