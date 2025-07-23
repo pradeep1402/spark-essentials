@@ -28,7 +28,6 @@ object TaxiApplication {
     taxiDF.show(false)
 
     /** Questions:
-      * 3. How are the trips distributed by length? Why are people taking the cab?
       * 4. What are the peak hours for long/short trips?
       * 5. What are the top 3 pickup/dropoff zones for long/short trips?
       * 6. How are people paying for the ride, on long/short trips?
@@ -64,6 +63,16 @@ object TaxiApplication {
       .agg(count("*").alias("total_rides"))
       .orderBy(col("total_rides").desc_nulls_last)
       .select(col("total_rides"), col("hours"))
+      .show()
+
+    // 3. How are the trips distributed by length? Why are people taking the cab?
+    taxiDF
+      .select(
+        lit(min(col("trip_distance"))).as("min"),
+        lit(max(col("trip_distance"))).as("max"),
+        lit(stddev(col("trip_distance"))).as("stddev"),
+        lit(mean(col("trip_distance")))
+      )
       .show()
   }
 }
