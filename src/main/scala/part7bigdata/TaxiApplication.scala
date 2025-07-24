@@ -85,7 +85,7 @@ object TaxiApplication {
       .sort($"count".desc)
       .show()
 
-    // 5. What are the top 3 pickup/dropoff zones for long/short trips?
+    // 5. What are the top 3 pickup/drop off zones for long/short trips?
     tripsWithLengthDF
       .groupBy(col("PULocationID"))
       .count()
@@ -93,5 +93,13 @@ object TaxiApplication {
       .join(taxiZonesDF, col("LocationID") === col("PULocationID"))
       .select(col("Borough"), col("Zone"), col("service_zone"), col("count"))
       .show()
+
+    // 6. How are people paying for the ride, on long/short trips?
+    tripsWithLengthDF
+      .groupBy("RatecodeID")
+      .agg(count("*").as("total_ride"))
+      .sort($"count".desc_nulls_last)
+      .show()
+
   }
 }
