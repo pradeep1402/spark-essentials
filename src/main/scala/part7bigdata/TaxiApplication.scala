@@ -98,7 +98,7 @@ object TaxiApplication {
     tripsWithLengthDF
       .groupBy("RatecodeID")
       .agg(count("*").as("total_ride"))
-      .sort($"count".desc_nulls_last)
+      .sort($"total_ride".desc_nulls_last)
       .show()
 
   }
