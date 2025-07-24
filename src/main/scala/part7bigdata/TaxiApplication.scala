@@ -27,11 +27,6 @@ object TaxiApplication {
     taxiZonesDF.show(false)
     taxiDF.show(false)
 
-    /** Questions:
-      * 7. How is the payment type evolving with time?
-      * 8. Can we explore a ride-sharing opportunity by grouping close short trips?
-      */
-
     // 1. Which zones have the most pickups/drop-offs overall?
     val pickups = taxiDF
       .groupBy("PULocationID")
@@ -100,6 +95,25 @@ object TaxiApplication {
       .agg(count("*").as("total_ride"))
       .sort($"total_ride".desc_nulls_last)
       .show()
+
+    // 7. How is the payment type evolving with time?
+    taxiDF
+      .groupBy(
+        to_date(col("tpep_pickup_datetime")).as("pickup_date"),
+        col("RatecodeID")
+      )
+      .count()
+      .orderBy(col("count"))
+      .show()
+
+    // 8. Can we explore a ride-sharing opportunity by grouping close short trips?
+    tripsWithLengthDF
+      .filter(!col("isLong"))
+      .where(col("passenger_count") < 3)
+      .select(count("*"))
+      .show()
+
+    taxiDF.select(count("*").as("total_trips")).show()
 
   }
 }
